@@ -38,7 +38,7 @@ def get_book_data(payload):
     if not request.is_json:
         return None, (jsonify({'error': 'Request must be JSON'}), 400)
 
-    if payload is None:
+    if payload is None or payload == {}:
         return None, (jsonify({'error': 'Missing request body'}), 400)
 
     for field in ('publisher', 'name', 'date'):
