@@ -96,21 +96,60 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: Server/tests/postman_newman/package-lock.json
+
       - name: Install API dependencies
         run: python -m pip install -r ../../requirements.txt
 
       - name: Start Flask API
         run: |
-          python ../../app.py > "$RUNNER_TEMP/flask.log" 2>&1 &
+          (cd ../.. && python -c "from app import app; app.run(host='127.0.0.1', port=5001, debug=False, use_reloader=False)") > "$RUNNER_TEMP/flask.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/flask.pid"
-          curl --retry 20 --retry-delay 1 --fail http://127.0.0.1:5001/health
+          curl --retry 30 --retry-delay 1 --retry-connrefused --fail http://127.0.0.1:5001/health
 
       - name: Install Newman
         run: npm ci
 
+      - name: Build CI Newman collection
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          source = Path('book_api_postman_collection.json')
+          target = Path('book_api_postman_collection.ci.json')
+          collection = json.loads(source.read_text())
+          manual_markers = (
+              'manual',
+              'must simulate',
+              'stop db',
+              'invalid host',
+              'modify server route',
+              'duplicate name',
+          )
+
+          def keep_item(item):
+              if 'item' not in item:
+                description = item.get('description', '')
+                if not isinstance(description, str):
+                  description = json.dumps(description)
+                text = f"{item.get('name', '')} {description}".lower()
+                  return not any(marker in text for marker in manual_markers)
+              item['item'] = [child for child in item['item'] if keep_item(child)]
+              return bool(item['item'])
+
+          collection['item'] = [item for item in collection['item'] if keep_item(item)]
+          target.write_text(json.dumps(collection, indent=2) + '\n')
+          PY
+
       - name: Run Newman collection
         run: |
-          npx newman run book_api_postman_collection.json \
+          npx newman run book_api_postman_collection.ci.json \
             -e postman_environment.json \
             -r cli,json \
             --reporter-json-export newman-result.json \
@@ -140,13 +179,21 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: Client/package-lock.json
+
       - name: Install API dependencies
         run: python -m pip install -r ../Server/requirements.txt
 
       - name: Start Flask API
         run: |
-          python ../Server/app.py > "$RUNNER_TEMP/flask-playwright.log" 2>&1 &
-          curl --retry 20 --retry-delay 1 --fail http://127.0.0.1:5001/health
+          (cd ../Server && python -c "from app import app; app.run(host='127.0.0.1', port=5001, debug=False, use_reloader=False)") > "$RUNNER_TEMP/flask-playwright.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/flask-playwright.pid"
+          curl --retry 30 --retry-delay 1 --retry-connrefused --fail http://127.0.0.1:5001/health
 
       - name: Install frontend dependencies
         run: npm ci

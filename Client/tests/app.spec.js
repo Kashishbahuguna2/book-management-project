@@ -2,8 +2,8 @@ import { test, expect } from './test-setup';
 
 test.describe('App Navigation', () => {
   test('should render navigation header', async ({ page }) => {
-    await expect(page.locator('text=Book Management System')).toBeVisible();
-    await expect(page.locator('.d-flex.justify-content-center.py-2')).toBeVisible();
+    await expect(page.locator('h1', { hasText: 'Your reading shelf' })).toBeVisible();
+    await expect(page.locator('.library-hero')).toBeVisible();
   });
 
   test('should have correct routing setup', async ({ page }) => {
@@ -20,15 +20,15 @@ test.describe('App Navigation', () => {
 
   test('should maintain navigation header across all pages', async ({ page }) => {
     // Check header on books page
-    await expect(page.locator('text=Book Management System')).toBeVisible();
+    await expect(page.locator('h1', { hasText: 'Your reading shelf' })).toBeVisible();
     
     // Check header on create page
     await page.goto('/create');
-    await expect(page.locator('text=Book Management System')).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'Add a Book' })).toBeVisible();
     
     // Check header on update page (if accessible)
     await page.goto('/');
-    await expect(page.locator('text=Book Management System')).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'Book catalogue' })).toBeVisible();
   });
 
   test('should have all routes defined in App.jsx', async ({ page }) => {

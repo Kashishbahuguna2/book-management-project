@@ -89,7 +89,7 @@ test.describe('Update Book Page', () => {
     
     if (await updateForm.isVisible()) {
       await expect(updateForm).toBeVisible();
-      await expect(page.locator('button[type="submit"]')).toHaveText('Update');
+      await expect(page.locator('button[type="submit"]')).toHaveText('Save changes');
     }
   });
 });

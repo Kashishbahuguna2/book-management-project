@@ -7,7 +7,7 @@ test.describe('Books List Page', () => {
 
   test('should display books page with correct structure', async ({ page }) => {
     // Check navigation header
-    await expect(page.locator('text=Book Management System')).toBeVisible();
+    await expect(page.locator('h1', { hasText: 'Your reading shelf' })).toBeVisible();
     
     // Check create button
     const createButton = page.locator('a.btn.btn-success');
